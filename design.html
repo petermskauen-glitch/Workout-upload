@@ -1,0 +1,194 @@
+<!doctype html>
+<html lang="no"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>Workout Wishes — designprototype</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0;}
+  :root{--bg:#edeae2;--hi:rgba(255,255,255,.9);--sh:rgba(170,160,142,.55);--ink:#46413a;--soft:#8c8475;}
+  body{font-family:-apple-system,'Segoe UI Variable','Segoe UI',system-ui,sans-serif;
+    background:var(--bg);color:var(--ink);min-height:100vh;-webkit-text-size-adjust:100%;}
+  body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    opacity:.5;mix-blend-mode:soft-light;}
+  .app{position:relative;width:100%;max-width:440px;margin:0 auto;min-height:100vh;overflow:hidden;}
+  .page{position:relative;z-index:1;padding:54px 28px 38px;min-height:100vh;display:flex;flex-direction:column;}
+
+  .head{display:inline-block;font-size:23px;font-weight:500;letter-spacing:0;font-stretch:condensed;transform:scaleX(.9);transform-origin:left;}
+  h1.head{color:var(--ink);margin:0 0 16px 6px;}
+  .sub.head{color:var(--soft);margin:22px 0 12px 6px;}
+
+  .box{background:var(--bg);border-radius:26px;box-shadow:-9px -9px 18px var(--hi),10px 10px 22px var(--sh);}
+  .prompt{position:relative;height:120px;padding:16px 18px;}
+  .prompt textarea{width:100%;height:100%;border:none;outline:none;background:transparent;resize:none;
+    font:inherit;font-size:16px;color:#5b5446;padding-right:46px;}
+  .ph{position:absolute;left:18px;top:16px;right:54px;font-size:16px;color:#a59c8c;pointer-events:none;}
+  .ph.pulse{font-style:italic;font-weight:600;color:#d08f50;animation:breathe 3.2s ease-in-out infinite;}
+  @keyframes breathe{0%,100%{opacity:.38}50%{opacity:.96}}
+  .send-btn{position:absolute;right:12px;bottom:12px;width:40px;height:40px;border-radius:50%;border:none;cursor:pointer;
+    background:#6293c8;box-shadow:0 2px 6px rgba(40,80,140,.28);display:flex;align-items:center;justify-content:center;}
+  .send-btn svg{width:23px;height:23px;stroke:#fff;stroke-width:2.4;fill:none;}
+
+  .answer{flex:1 1 auto;min-height:150px;padding:18px;color:#bdb4a3;font-size:15px;display:flex;flex-direction:column;gap:12px;overflow:auto;}
+  .answer .placeholder{margin:auto auto 0 0;}
+  .msg-user{align-self:flex-end;max-width:84%;background:rgba(255,255,255,.62);border:1px solid rgba(255,255,255,.7);
+    border-radius:16px 16px 4px 16px;padding:11px 14px;color:#5b5446;font-size:14.5px;line-height:1.35;white-space:pre-wrap;}
+  .msg-ai{align-self:flex-start;max-width:94%;color:#6b6254;font-size:14.5px;line-height:1.42;}
+
+  .gear{position:absolute;top:30px;right:28px;width:54px;height:54px;border-radius:50%;z-index:3;border:none;background:var(--bg);cursor:pointer;
+    display:flex;align-items:center;justify-content:center;box-shadow:inset 5px 5px 10px var(--sh),inset -5px -5px 10px var(--hi);}
+  .gear svg{width:24px;height:24px;stroke:#6b6357;stroke-width:1.7;fill:none;}
+
+  /* bunn: dato-chip, slide-to-launch, upload */
+  .bottom{margin-top:18px;}
+  .date-wrap{display:flex;justify-content:center;margin-bottom:12px;}
+  .date-chip{display:inline-flex;align-items:center;padding:6px 16px;border-radius:999px;border:1px solid rgba(255,255,255,.72);
+    background:transparent;font-style:italic;font-weight:500;font-size:13.5px;color:#9a9080;cursor:pointer;}
+  .date-chip.set{font-style:normal;color:#7a7160;}
+
+  .slide-track{position:relative;width:100%;height:66px;border-radius:33px;background:var(--bg);
+    box-shadow:inset 5px 5px 10px var(--sh),inset -5px -5px 10px var(--hi);}
+  .slide-label{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+    font-style:italic;font-weight:500;font-size:16px;color:#9a9080;pointer-events:none;letter-spacing:.01em;}
+  .slide-handle{position:absolute;left:4px;top:50%;transform:translateY(-50%);width:98px;height:58px;border-radius:29px;overflow:hidden;cursor:grab;touch-action:none;
+    backdrop-filter:blur(4px) saturate(150%);-webkit-backdrop-filter:blur(4px) saturate(150%);
+    box-shadow:0 2px 5px rgba(70,62,48,.16);}
+  .slide-handle .pill-img{position:absolute;top:50%;left:50%;width:58px;height:98px;transform:translate(-50%,-50%) rotate(90deg);
+    background:url('glasspille.png') center/100% 100% no-repeat;}
+  .slide-handle svg{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:22px;height:22px;stroke:#6b6357;stroke-width:2;fill:none;z-index:2;}
+
+  .upload-row{display:flex;align-items:center;justify-content:center;gap:14px;margin-top:16px;}
+  .upload-form{width:54px;height:54px;border-radius:50%;background:var(--bg);display:flex;align-items:center;justify-content:center;
+    box-shadow:inset 4px 4px 8px var(--sh),inset -4px -4px 8px var(--hi);}
+  .upload-btn{width:42px;height:42px;border-radius:50%;overflow:hidden;border:none;cursor:pointer;
+    background:url('glassirkel.png') center/100% 100% no-repeat;
+    backdrop-filter:blur(3px) saturate(150%);-webkit-backdrop-filter:blur(3px) saturate(150%);
+    display:flex;align-items:center;justify-content:center;}
+  .upload-btn svg{width:20px;height:20px;stroke:#6b6357;stroke-width:1.9;fill:none;}
+  .upload-label{font-style:italic;font-weight:500;font-size:15px;color:#9a9080;}
+
+  /* verktøymeny */
+  .tools{position:absolute;inset:0;z-index:10;opacity:0;pointer-events:none;transition:opacity .3s ease;}
+  .tools.open{opacity:1;pointer-events:auto;}
+  .scrim{position:absolute;inset:0;background:rgba(40,36,30,.14);}
+  .center{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%) scale(.92);
+    display:flex;flex-direction:column;align-items:center;gap:16px;transition:transform .35s cubic-bezier(.22,1,.3,1);}
+  .tools.open .center{transform:translate(-50%,-50%) scale(1);}
+  .close-wrap{position:relative;}
+  .close{width:48px;height:48px;border-radius:50%;overflow:hidden;border:none;cursor:pointer;
+    background:url('glassirkel.png') center/100% 100% no-repeat;
+    backdrop-filter:blur(3px) saturate(150%);-webkit-backdrop-filter:blur(3px) saturate(150%);
+    display:flex;align-items:center;justify-content:center;}
+  .close svg{width:16px;height:16px;stroke:#4a4438;stroke-width:2.3;fill:none;}
+  .panel{position:relative;width:312px;height:438px;border-radius:18px;overflow:hidden;border:none;
+    background:url('glassflate.png') center/100% 100% no-repeat;
+    backdrop-filter:blur(3px) saturate(150%);-webkit-backdrop-filter:blur(3px) saturate(150%);padding:38px 30px;}
+  .hf{display:inline-block;font-weight:500;font-stretch:condensed;transform:scaleX(.9);transform-origin:left;letter-spacing:0;}
+  .panel h2{font-size:22px;color:#6a6254;margin-bottom:22px;}
+  .panel .item{background:transparent;border:1px solid rgba(255,255,255,.78);border-radius:16px;
+    padding:13px 16px;margin-bottom:11px;font-size:16px;color:#7a7160;line-height:1.25;cursor:pointer;}
+
+  @supports (backdrop-filter: scale(1.15)) or (-webkit-backdrop-filter: scale(1.15)) {
+    .panel,.close{backdrop-filter:blur(3px) saturate(150%) scale(1.15);-webkit-backdrop-filter:blur(3px) saturate(150%) scale(1.15);}
+    .slide-handle{backdrop-filter:blur(4px) saturate(150%) scale(1.25);-webkit-backdrop-filter:blur(4px) saturate(150%) scale(1.25);}
+  }
+</style></head>
+<body>
+  <div class="app" id="app">
+    <div class="page">
+      <button class="gear" id="gear" aria-label="Verktøy">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      </button>
+
+      <h1 class="head">Workout Wishes</h1>
+      <div class="box prompt">
+        <textarea id="pt" rows="3"></textarea>
+        <span class="ph" id="ph">Beskriv økta du ønsker deg …</span>
+        <button class="send-btn" id="send" aria-label="Send"><svg viewBox="0 0 24 24"><path d="M12 19V5M6 11l6-6 6 6"/></svg></button>
+      </div>
+
+      <div class="sub head">Your wish comes true</div>
+      <div class="box answer" id="chat"><span class="placeholder">Språkmodellens svar dukker opp her …</span></div>
+
+      <div class="bottom">
+        <div class="date-wrap"><span class="date-chip" id="dchip">Set date (optional)</span></div>
+        <div class="slide-track" id="track">
+          <div class="slide-label" id="slabel">Launch to Garmin</div>
+          <div class="slide-handle" id="sh"><div class="pill-img"></div><svg viewBox="0 0 24 24"><path d="M5 12h13M12 6l6 6-6 6"/></svg></div>
+        </div>
+        <div class="upload-row">
+          <div class="upload-form"><button class="upload-btn" aria-label="Upload existing file"><svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M17 8l-5-5-5 5"/><path d="M12 3v12"/></svg></button></div>
+          <span class="upload-label">Upload existing file</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="tools" id="tools">
+      <div class="scrim" id="scrim"></div>
+      <div class="center">
+        <div class="close-wrap">
+          <button class="close" id="close" aria-label="Lukk"><svg viewBox="0 0 24 24"><path d="M5 5l14 14M19 5L5 19"/></svg></button>
+        </div>
+        <div class="panel">
+          <h2 class="hf">Verktøy</h2>
+          <div class="item"><span class="hf">Garmin-innlogging</span></div>
+          <div class="item"><span class="hf">Tilkoblingsstatus</span></div>
+          <div class="item"><span class="hf">App-nøkkel</span></div>
+          <div class="item"><span class="hf">Fjern app-nøkkel fra denne enheten</span></div>
+          <div class="item"><span class="hf">Om appen</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <input type="date" id="dateInput" style="position:absolute;opacity:0;pointer-events:none;width:0;height:0;">
+
+<script>
+  const $ = id => document.getElementById(id);
+  const esc = s => s.replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+
+  // Verktøymeny
+  $('gear').onclick  = () => $('tools').classList.add('open');
+  $('close').onclick = () => $('tools').classList.remove('open');
+  $('scrim').onclick = () => $('tools').classList.remove('open');
+
+  // Prompt + placeholder + send (chat-flyt)
+  const ta = $('pt'), ph = $('ph'), chat = $('chat');
+  let answered = false;
+  const refreshPh = () => ph.style.display = ta.value.trim() ? 'none' : 'block';
+  ta.addEventListener('input', refreshPh);
+  function send(){
+    const t = ta.value.trim(); if(!t) return;
+    if(!answered){ chat.innerHTML = ''; answered = true; }
+    chat.insertAdjacentHTML('beforeend', '<div class="msg-user">'+esc(t)+'</div>');
+    chat.insertAdjacentHTML('beforeend', '<div class="msg-ai">Forslag: Oppvarming 15 min rolig (sone 2). Hovedsett etter ønsket ditt. Nedjogg 10 min. Vil du justere noe?</div>');
+    ta.value = '';
+    ph.textContent = 'Adjust or Launch'; ph.classList.add('pulse');
+    refreshPh();
+    chat.scrollTop = chat.scrollHeight;
+  }
+  $('send').onclick = send;
+
+  // Dato-chip → ekte datovelger
+  const di = $('dateInput'), chip = $('dchip');
+  const MON = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
+  chip.onclick = () => { if(di.showPicker) di.showPicker(); else di.click(); };
+  di.onchange = () => {
+    if(!di.value) return;
+    const [y,m,d] = di.value.split('-');
+    chip.textContent = d + MON[(+m)-1] + y.slice(2);
+    chip.classList.add('set');
+  };
+
+  // Slide-to-launch
+  const track = $('track'), sh = $('sh'), label = $('slabel');
+  let drag = false, sx = 0, cx = 0;
+  const maxX = () => track.clientWidth - sh.offsetWidth - 8;
+  sh.addEventListener('pointerdown', e => { drag = true; sx = e.clientX - cx; sh.style.transition = 'none'; sh.setPointerCapture(e.pointerId); });
+  addEventListener('pointermove', e => { if(!drag) return; cx = Math.max(0, Math.min(maxX(), e.clientX - sx)); sh.style.left = (4+cx)+'px'; });
+  addEventListener('pointerup', () => {
+    if(!drag) return; drag = false; sh.style.transition = 'left .25s ease';
+    if(cx >= maxX()*0.9){ label.textContent = 'Sendt til Garmin ✓'; setTimeout(()=>label.textContent='Launch to Garmin', 1800); }
+    cx = 0; sh.style.left = '4px';
+  });
+</script>
+</body></html>
