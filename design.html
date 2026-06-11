@@ -34,6 +34,9 @@
   .msg-user{align-self:flex-end;max-width:84%;background:rgba(255,255,255,.62);border:1px solid rgba(255,255,255,.7);
     border-radius:16px 16px 4px 16px;padding:11px 14px;color:#5b5446;font-size:14.5px;line-height:1.35;white-space:pre-wrap;}
   .msg-ai{align-self:flex-start;max-width:94%;color:#6b6254;font-size:14.5px;line-height:1.42;}
+  .msg-file{align-self:flex-start;max-width:94%;background:rgba(255,255,255,.55);border:1px solid rgba(255,255,255,.65);border-radius:14px;padding:11px 14px;color:#5b5446;font-size:14px;line-height:1.4;}
+  .msg-file .nm{font-size:12px;color:#9a9080;}
+  .msg-err{align-self:flex-start;color:#b5746a;font-size:14px;}
 
   .gear{position:absolute;top:30px;right:28px;width:46px;height:46px;border-radius:50%;z-index:3;border:none;background:var(--bg);cursor:pointer;
     display:grid;place-items:center;box-shadow:inset 4px 4px 8px var(--sh),inset -4px -4px 8px var(--hi);}
@@ -124,11 +127,13 @@
           <div class="slide-handle" id="sh"><div class="pill-img"></div><svg viewBox="0 0 24 24"><path d="M5 12h13M12 6l6 6-6 6"/></svg></div>
         </div>
         <div class="upload-row">
-          <div class="upload-form"><button class="upload-btn" aria-label="Upload existing file"><svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M17 8l-5-5-5 5"/><path d="M12 3v12"/></svg></button></div>
+          <div class="upload-form"><button class="upload-btn" id="uploadBtn" aria-label="Upload existing file"><svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M17 8l-5-5-5 5"/><path d="M12 3v12"/></svg></button></div>
           <span class="upload-label">Upload existing file</span>
         </div>
       </div>
     </div>
+
+    <input type="file" id="fileInput" accept=".json,application/json" hidden>
 
     <!-- Verktøymeny -->
     <div class="modal" id="tools">
@@ -185,6 +190,29 @@
     chat.insertAdjacentHTML('beforeend', '<div class="msg-ai">Forslag: Oppvarming 15 min rolig (sone 2). Hovedsett etter ønsket ditt. Nedjogg 10 min. Vil du justere noe?</div>');
     ta.value = ''; ph.textContent = 'Adjust or Launch'; ph.classList.add('pulse'); refreshPh();
     chat.scrollTop = chat.scrollHeight;
+  };
+
+  // Upload existing file -> les JSON inn i feltet (gjenbruker Launch to Garmin)
+  const fileInput = $('fileInput');
+  $('uploadBtn').onclick = () => fileInput.click();
+  fileInput.onchange = () => {
+    const f = fileInput.files[0]; if(!f) return;
+    const r = new FileReader();
+    r.onload = () => {
+      if(!answered){ chat.innerHTML=''; answered=true; }
+      try {
+        const data = JSON.parse(r.result);
+        const navn = data.navn || f.name;
+        const sport = data.sport || '?';
+        chat.insertAdjacentHTML('beforeend',
+          '<div class="msg-file"><span class="nm">\uD83D\uDCC4 '+esc(f.name)+'</span><br><b>'+esc(navn)+'</b> · '+esc(sport)+'</div>');
+        ph.textContent='Adjust or Launch'; ph.classList.add('pulse');
+      } catch(e) {
+        chat.insertAdjacentHTML('beforeend', '<div class="msg-err">Kunne ikke lese fila som gyldig JSON.</div>');
+      }
+      refreshPh(); chat.scrollTop = chat.scrollHeight; fileInput.value='';
+    };
+    r.readAsText(f);
   };
 
   // Datovelger (kalender)
