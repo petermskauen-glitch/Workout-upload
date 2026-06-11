@@ -1,0 +1,34 @@
+# Render Blueprint for Garmin økt-opplaster
+#
+# Slik tar du den i bruk:
+#  1. Gå til render.com -> New -> Blueprint, og koble dette GitHub-repoet.
+#     (Render leser denne fila fra repoets standard-branch — slå den sammen til
+#      main først, eller pek Render mot ønsket branch.)
+#  2. Render oppretter en gratis Web Service med riktig start-kommando.
+#  3. Sett miljøvariablene APP_KEY og GARMINTOKENS i Render-dashbordet
+#     (de er bevisst IKKE i repoet — sync: false).
+#
+# Alternativt uten Blueprint: New -> Web Service, koble repoet, og bruk
+# Build Command / Start Command nedenfor manuelt.
+#
+# NB: gratis web-tjeneste på Render sover etter ~15 min inaktivitet og har
+# ~30-60 sek oppstart (cold start) ved neste besøk. Helt greit for personlig bruk
+# siden Garmin-tokenet lastes på nytt fra GARMINTOKENS ved oppstart.
+
+services:
+  - type: web
+    name: garmin-okt-opplaster
+    runtime: python
+    plan: free
+    region: frankfurt
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.12.3"
+      - key: APP_KEY
+        sync: false        # sett hemmelig verdi i Render-dashbordet
+      - key: GARMINTOKENS
+        sync: false        # lim inn Garmin-token i Render-dashbordet
