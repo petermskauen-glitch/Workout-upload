@@ -219,7 +219,18 @@ def home():
 
 @app.get("/health")
 def health():
-    return {"ok": True, "authenticated": _garmin is not None}
+    import importlib.metadata as _md
+    def _ver(p):
+        try:
+            return _md.version(p)
+        except Exception:
+            return "?"
+    return {
+        "ok": True,
+        "authenticated": _garmin is not None,
+        "garminconnect": _ver("garminconnect"),
+        "garth": _ver("garth"),
+    }
 
 
 @app.post("/setup")
