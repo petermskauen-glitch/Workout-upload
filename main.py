@@ -37,7 +37,10 @@ def _try_token_login() -> bool:
         g.login(token)            # token-streng lastes direkte
         _garmin = g
         return True
-    except Exception:
+    except Exception as e:
+        import traceback
+        print(f"[GARMIN] Token-innlogging feilet: {type(e).__name__}: {e}", flush=True)
+        traceback.print_exc()
         return False
 
 
@@ -230,7 +233,12 @@ def setup(payload: dict = Body(...), x_app_key: Optional[str] = Header(None)):
     if not email or not password:
         raise HTTPException(400, "Trenger 'email' og 'password'.")
     g = Garmin(email=email, password=password, return_on_mfa=True)
-    result = g.login()
+    try:
+        result = g.login()
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(502, f"Garmin avviste innlogging: {type(e).__name__}: {e}")
     needs_mfa = result[0] if isinstance(result, tuple) else None
     if needs_mfa == "needs_mfa":
         _pending_mfa = {"client": g, "state": result[1]}
