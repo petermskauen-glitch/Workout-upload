@@ -296,11 +296,15 @@ PAGE = """<!doctype html>
   function key(){ return APPKEY; }
 
   async function post(path, body){
-    var r = await fetch(path, { method:'POST',
-      headers:{ 'Content-Type':'application/json', 'X-App-Key': key() },
-      body: JSON.stringify(body) });
-    var data = await r.json().catch(function(){ return {}; });
-    return { ok:r.ok, status:r.status, data:data };
+    try{
+      var r = await fetch(path, { method:'POST',
+        headers:{ 'Content-Type':'application/json', 'X-App-Key': key() },
+        body: JSON.stringify(body) });
+      var data = await r.json().catch(function(){ return {}; });
+      return { ok:r.ok, status:r.status, data:data };
+    }catch(e){
+      return { ok:false, status:0, data:{ detail:'Nettverksfeil: ' + e } };
+    }
   }
 
   // ---- modaler ----
@@ -395,16 +399,21 @@ PAGE = """<!doctype html>
     history.push({ role:'user', text:t });
     ta.value=''; refreshPh();
     var think = addMsg('msg-ai thinking', 'Tenker …');
-    var res = await post('/generate', { messages: history });
-    think.remove();
-    if(res.ok && res.data){
-      var svar = res.data.svar || 'Her er forslaget.';
-      addMsg('msg-ai', esc(svar));
-      history.push({ role:'model', text: JSON.stringify(res.data) });
-      if(res.data.workout && res.data.workout.sport){ currentWorkout = res.data.workout; }
-      setAdjust();
-    } else {
-      addMsg('msg-err', esc((res.data && res.data.detail) || 'Noe gikk galt.'));
+    try {
+      var res = await post('/generate', { messages: history });
+      think.remove();
+      if(res.ok && res.data){
+        var svar = res.data.svar || 'Her er forslaget.';
+        addMsg('msg-ai', esc(svar));
+        history.push({ role:'model', text: JSON.stringify(res.data) });
+        if(res.data.workout && res.data.workout.sport){ currentWorkout = res.data.workout; }
+        setAdjust();
+      } else {
+        addMsg('msg-err', esc('Feil (' + res.status + '): ' + ((res.data && res.data.detail) || 'ukjent')));
+      }
+    } catch(e){
+      try{ think.remove(); }catch(_){}
+      addMsg('msg-err', 'Klientfeil: ' + e);
     }
   };
 
@@ -516,6 +525,7 @@ def generate(payload: dict = Body(...), x_app_key: Optional[str] = Header(None))
     """Lag en økt fra brukerens beskrivelse via Gemini. Returnerer
     {"workout": <økt eller null>, "svar": "<tekst>"}."""
     _check_key(x_app_key)
+    print(f"[GENERATE] model={GEMINI_MODEL} key_set={bool(GEMINI_API_KEY)}", flush=True)
     if not GEMINI_API_KEY:
         raise HTTPException(503, "Mangler GEMINI_API_KEY på serveren.")
     messages = payload.get("messages") or []
