@@ -1,0 +1,47 @@
+{
+  "_om": "Startgrunnlag for Garmin styrkeøvelse-katalog. Brukes senere til en mapping-tabell: vennlig navn -> Garmin-kategori + øvelsesnavn, slik at styrkeøkter kan bygges som Garmin forstår.",
+  "_status": "KATEGORIENE er pålitelige (FIT exercise_category). ØVELSESNAVNENE under er vanlige eksempler og MÅ VERIFISERES mot Garmins FIT SDK (Profile.xlsx / fit-python-sdk) før de brukes i produksjon — eksakt staving avgjør om Garmin godtar dem.",
+  "_autoritativ_kilde": "Garmin FIT SDK: developer.garmin.com/fit/download -> Profile.xlsx -> typene 'exercise_category' og '<kategori>_exercise_name'. Alternativt enum-ene i github.com/garmin/fit-python-sdk.",
+  "_hvordan_fullfore": "1) Last ned FIT SDK Profile.xlsx. 2) Hent alle verdier for exercise_category og hver *_exercise_name. 3) Fyll inn 'exerciseName' (og evt. numerisk kode) verifisert. 4) Utvid 'exercises' med flere øvelser etter behov.",
+
+  "categories": [
+    "BENCH_PRESS", "CALF_RAISE", "CARDIO", "CARRY", "CHOP", "CORE", "CRUNCH",
+    "CURL", "DEADLIFT", "FLYE", "HIP_RAISE", "HIP_STABILITY", "HIP_SWING",
+    "HYPEREXTENSION", "LATERAL_RAISE", "LEG_CURL", "LEG_RAISE", "LUNGE",
+    "OLYMPIC_LIFT", "PLANK", "PLYO", "PULL_UP", "PUSH_UP", "ROW",
+    "SHOULDER_PRESS", "SHOULDER_STABILITY", "SHRUG", "SIT_UP", "SQUAT",
+    "TOTAL_BODY", "TRICEPS_EXTENSION", "WARM_UP", "RUN", "UNKNOWN"
+  ],
+
+  "_merk": "Alle 'exerciseName' under har \"verify\": true til de er sjekket mot FIT SDK.",
+  "exercises": {
+    "knebøy":              { "category": "SQUAT",             "exerciseName": "BARBELL_BACK_SQUAT",            "verify": true },
+    "frontbøy":            { "category": "SQUAT",             "exerciseName": "BARBELL_FRONT_SQUAT",           "verify": true },
+    "goblet squat":        { "category": "SQUAT",             "exerciseName": "GOBLET_SQUAT",                  "verify": true },
+    "markløft":            { "category": "DEADLIFT",          "exerciseName": "BARBELL_DEADLIFT",              "verify": true },
+    "rumensk markløft":    { "category": "DEADLIFT",          "exerciseName": "ROMANIAN_DEADLIFT",             "verify": true },
+    "benkpress":           { "category": "BENCH_PRESS",       "exerciseName": "BARBELL_BENCH_PRESS",           "verify": true },
+    "benkpress manualer":  { "category": "BENCH_PRESS",       "exerciseName": "DUMBBELL_BENCH_PRESS",          "verify": true },
+    "skråbenk manualer":   { "category": "BENCH_PRESS",       "exerciseName": "INCLINE_DUMBBELL_BENCH_PRESS",  "verify": true },
+    "skulderpress stang":  { "category": "SHOULDER_PRESS",    "exerciseName": "BARBELL_SHOULDER_PRESS",        "verify": true },
+    "skulderpress manualer":{ "category": "SHOULDER_PRESS",   "exerciseName": "DUMBBELL_SHOULDER_PRESS",       "verify": true },
+    "arnold press":        { "category": "SHOULDER_PRESS",    "exerciseName": "ARNOLD_PRESS",                  "verify": true },
+    "stangroing":          { "category": "ROW",               "exerciseName": "BENT_OVER_ROW",                 "verify": true },
+    "manualroing":         { "category": "ROW",               "exerciseName": "DUMBBELL_ROW",                  "verify": true },
+    "sittende kabelroing": { "category": "ROW",               "exerciseName": "SEATED_CABLE_ROW",              "verify": true },
+    "pull-up":             { "category": "PULL_UP",           "exerciseName": "PULL_UP",                       "verify": true },
+    "chin-up":             { "category": "PULL_UP",           "exerciseName": "CHIN_UP",                       "verify": true },
+    "push-up":             { "category": "PUSH_UP",           "exerciseName": "PUSH_UP",                       "verify": true },
+    "bicepscurl stang":    { "category": "CURL",              "exerciseName": "BARBELL_BICEPS_CURL",           "verify": true },
+    "bicepscurl manualer": { "category": "CURL",              "exerciseName": "DUMBBELL_BICEPS_CURL",          "verify": true },
+    "hammercurl":          { "category": "CURL",              "exerciseName": "HAMMER_CURL",                   "verify": true },
+    "triceps extension":   { "category": "TRICEPS_EXTENSION", "exerciseName": "TRICEPS_EXTENSION",             "verify": true },
+    "utfall":              { "category": "LUNGE",             "exerciseName": "WALKING_LUNGE",                 "verify": true },
+    "planke":              { "category": "PLANK",             "exerciseName": "PLANK",                         "verify": true },
+    "sideplanke":          { "category": "PLANK",             "exerciseName": "SIDE_PLANK",                    "verify": true },
+    "crunch":              { "category": "CRUNCH",            "exerciseName": "CRUNCH",                         "verify": true },
+    "sit-up":              { "category": "SIT_UP",            "exerciseName": "SIT_UP",                        "verify": true },
+    "tåhev":               { "category": "CALF_RAISE",        "exerciseName": "STANDING_CALF_RAISE",           "verify": true },
+    "sidehev":             { "category": "LATERAL_RAISE",     "exerciseName": "LATERAL_RAISE",                 "verify": true }
+  }
+}
