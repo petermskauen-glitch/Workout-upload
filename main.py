@@ -192,7 +192,7 @@ PAGE = """<!doctype html>
   }
 </style></head>
 <body>
-  <div class="ver">2026.06.12c</div>
+  <div class="ver">2026.06.12d</div>
   <div class="app" id="app">
     <div class="page">
       <button class="gear" id="gear" aria-label="Verktøy">
@@ -296,7 +296,7 @@ PAGE = """<!doctype html>
   var esc = function(s){ return String(s).replace(/[&<>]/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;'}[c]; }); };
   var APPKEY = localStorage.getItem('appkey') || '';
   function key(){ return APPKEY; }
-  function dbg(s){ var v=document.querySelector('.ver'); if(v){ v.textContent='2026.06.12c · '+s; } }
+  function dbg(s){ var v=document.querySelector('.ver'); if(v){ v.textContent='2026.06.12d · '+s; } }
   window.onerror = function(m, src, ln){ alert('JS-feil: ' + m + ' (linje ' + ln + ')'); };
   window.addEventListener('unhandledrejection', function(e){ var r=e.reason; alert('Rejection: ' + ((r && r.message) || r)); });
 
@@ -397,7 +397,7 @@ PAGE = """<!doctype html>
 
   // ---- prompt -> Gemini -> chat ----
   var ta=$('pt'), ph=$('ph'), chat=$('chat');
-  var history=[]; var currentWorkout=null; var answered=false;
+  var convo=[]; var currentWorkout=null; var answered=false;
   function refreshPh(){ ph.style.display = ta.value.trim() ? 'none' : 'block'; }
   ta.addEventListener('input', refreshPh);
   function addMsg(cls, html){ var d=document.createElement('div'); d.className=cls; d.innerHTML=html; chat.appendChild(d); chat.scrollTop=chat.scrollHeight; return d; }
@@ -409,17 +409,17 @@ PAGE = """<!doctype html>
     if(!key()){ openModal('tools'); showView('appkey'); $('keyMsg').textContent='Sett app-nøkkelen først.'; $('keyMsg').className='vmsg err'; dbg('ingen-nokkel'); return; }
     if(!answered){ chat.innerHTML=''; answered=true; }
     addMsg('msg-user', esc(t)); dbg('bruker-ok');
-    history.push({ role:'user', text:t });
+    convo.push({ role:'user', text:t });
     ta.value=''; refreshPh(); dbg('sender');
     var think = addMsg('msg-ai thinking', 'Tenker …');
     try {
-      var res = await post('/generate', { messages: history });
+      var res = await post('/generate', { messages: convo });
       dbg('status ' + res.status);
       think.remove();
       if(res.ok && res.data){
         var svar = res.data.svar || 'Her er forslaget.';
         addMsg('msg-ai', esc(svar));
-        history.push({ role:'model', text: JSON.stringify(res.data) });
+        convo.push({ role:'model', text: JSON.stringify(res.data) });
         if(res.data.workout && res.data.workout.sport){ currentWorkout = res.data.workout; }
         setAdjust();
       } else {
