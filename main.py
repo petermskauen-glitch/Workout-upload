@@ -192,7 +192,7 @@ PAGE = """<!doctype html>
   }
 </style></head>
 <body>
-  <div class="ver">2026.06.12a</div>
+  <div class="ver">2026.06.12b</div>
   <div class="app" id="app">
     <div class="page">
       <button class="gear" id="gear" aria-label="Verktøy">
@@ -297,15 +297,22 @@ PAGE = """<!doctype html>
   var APPKEY = localStorage.getItem('appkey') || '';
   function key(){ return APPKEY; }
 
-  async function post(path, body){
+  async function post(path, body, timeoutMs){
+    var ctrl = new AbortController();
+    var to = setTimeout(function(){ ctrl.abort(); }, timeoutMs || 45000);
     try{
-      var r = await fetch(path, { method:'POST',
+      var r = await fetch(path, { method:'POST', signal: ctrl.signal,
         headers:{ 'Content-Type':'application/json', 'X-App-Key': key() },
         body: JSON.stringify(body) });
+      clearTimeout(to);
       var data = await r.json().catch(function(){ return {}; });
       return { ok:r.ok, status:r.status, data:data };
     }catch(e){
-      return { ok:false, status:0, data:{ detail:'Nettverksfeil: ' + e } };
+      clearTimeout(to);
+      var msg = (e && e.name === 'AbortError')
+        ? ('Tidsavbrudd – ingen respons innen ' + ((timeoutMs||45000)/1000) + ' s.')
+        : ('Nettverksfeil: ' + e);
+      return { ok:false, status:0, data:{ detail: msg } };
     }
   }
 
@@ -551,13 +558,19 @@ def generate(payload: dict = Body(...), x_app_key: Optional[str] = Header(None))
         url, data=json.dumps(body).encode("utf-8"),
         headers={"Content-Type": "application/json"},
     )
+    import time as _t
+    print("[GENERATE] kaller Gemini …", flush=True)
+    _start = _t.time()
     try:
-        with urllib.request.urlopen(req, timeout=60) as resp:
+        with urllib.request.urlopen(req, timeout=30) as resp:
             data = json.loads(resp.read().decode("utf-8"))
+        print(f"[GENERATE] Gemini OK på {round(_t.time()-_start,1)}s", flush=True)
     except urllib.error.HTTPError as e:
         detail = e.read().decode("utf-8", "ignore")[:400]
+        print(f"[GENERATE] Gemini HTTPError {e.code}: {detail}", flush=True)
         raise HTTPException(502, f"Gemini-feil ({e.code}): {detail}")
     except Exception as e:
+        print(f"[GENERATE] Gemini-kall feilet etter {round(_t.time()-_start,1)}s: {type(e).__name__}: {e}", flush=True)
         raise HTTPException(502, f"Gemini-kall feilet: {type(e).__name__}: {e}")
 
     try:
