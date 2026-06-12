@@ -174,6 +174,7 @@ PAGE = """<!doctype html>
   .back{font-size:13px;color:#8c8475;cursor:pointer;margin-bottom:6px;display:inline-block;}
   .abouttext{font-size:14px;color:#6b6254;line-height:1.5;}
   .hidden{display:none;}
+  .ver{position:fixed;left:8px;bottom:6px;font-size:10px;line-height:1;color:#000;opacity:.5;z-index:50;font-family:ui-monospace,monospace;}
   .cal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
   .cal-head button{border:none;background:transparent;font-size:24px;line-height:1;color:#7a7160;cursor:pointer;width:34px;height:34px;border-radius:50%;}
   .cal-title{font-weight:600;font-size:17px;color:#5b5446;}
@@ -191,6 +192,7 @@ PAGE = """<!doctype html>
   }
 </style></head>
 <body>
+  <div class="ver">2026.06.12a</div>
   <div class="app" id="app">
     <div class="page">
       <button class="gear" id="gear" aria-label="Verktøy">
@@ -501,7 +503,7 @@ PAGE = """<!doctype html>
 
 @app.get("/", response_class=HTMLResponse)
 def home():
-    return PAGE
+    return HTMLResponse(PAGE, headers={"Cache-Control": "no-store, max-age=0"})
 
 
 @app.get("/health")
