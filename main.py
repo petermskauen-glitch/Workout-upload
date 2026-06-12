@@ -192,7 +192,7 @@ PAGE = """<!doctype html>
   }
 </style></head>
 <body>
-  <div class="ver">2026.06.12b</div>
+  <div class="ver">2026.06.12c</div>
   <div class="app" id="app">
     <div class="page">
       <button class="gear" id="gear" aria-label="Verktøy">
@@ -296,6 +296,9 @@ PAGE = """<!doctype html>
   var esc = function(s){ return String(s).replace(/[&<>]/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;'}[c]; }); };
   var APPKEY = localStorage.getItem('appkey') || '';
   function key(){ return APPKEY; }
+  function dbg(s){ var v=document.querySelector('.ver'); if(v){ v.textContent='2026.06.12c · '+s; } }
+  window.onerror = function(m, src, ln){ alert('JS-feil: ' + m + ' (linje ' + ln + ')'); };
+  window.addEventListener('unhandledrejection', function(e){ var r=e.reason; alert('Rejection: ' + ((r && r.message) || r)); });
 
   async function post(path, body, timeoutMs){
     var ctrl = new AbortController();
@@ -401,15 +404,17 @@ PAGE = """<!doctype html>
   function setAdjust(){ ph.textContent='Adjust or Launch'; ph.classList.add('pulse'); refreshPh(); }
 
   $('send').onclick = async function(){
-    var t = ta.value.trim(); if(!t) return;
-    if(!key()){ openModal('tools'); showView('appkey'); $('keyMsg').textContent='Sett app-nøkkelen først.'; $('keyMsg').className='vmsg err'; return; }
+    dbg('klikk');
+    var t = ta.value.trim(); if(!t){ dbg('tom'); return; }
+    if(!key()){ openModal('tools'); showView('appkey'); $('keyMsg').textContent='Sett app-nøkkelen først.'; $('keyMsg').className='vmsg err'; dbg('ingen-nokkel'); return; }
     if(!answered){ chat.innerHTML=''; answered=true; }
-    addMsg('msg-user', esc(t));
+    addMsg('msg-user', esc(t)); dbg('bruker-ok');
     history.push({ role:'user', text:t });
-    ta.value=''; refreshPh();
+    ta.value=''; refreshPh(); dbg('sender');
     var think = addMsg('msg-ai thinking', 'Tenker …');
     try {
       var res = await post('/generate', { messages: history });
+      dbg('status ' + res.status);
       think.remove();
       if(res.ok && res.data){
         var svar = res.data.svar || 'Her er forslaget.';
@@ -421,6 +426,7 @@ PAGE = """<!doctype html>
         addMsg('msg-err', esc('Feil (' + res.status + '): ' + ((res.data && res.data.detail) || 'ukjent')));
       }
     } catch(e){
+      dbg('catch');
       try{ think.remove(); }catch(_){}
       addMsg('msg-err', 'Klientfeil: ' + e);
     }
