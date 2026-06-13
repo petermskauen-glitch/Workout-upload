@@ -30,6 +30,15 @@ APP_KEY = os.getenv("APP_KEY", "")
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
 GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.0-flash")
 
+# Styrkeøvelse-katalog: vennlig navn -> {category, exerciseName}
+try:
+    with open("strength/garmin_exercises.json", encoding="utf-8") as _f:
+        STRENGTH_EXERCISES = json.load(_f).get("exercises", {})
+except Exception as _e:
+    print(f"[STRENGTH] kunne ikke laste katalog: {_e}", flush=True)
+    STRENGTH_EXERCISES = {}
+STRENGTH_NAMES = sorted(STRENGTH_EXERCISES.keys())
+
 _garmin: Optional[Garmin] = None      # innlogget klient
 _pending_mfa: dict[str, Any] = {}     # mellomlagret tilstand under MFA
 
@@ -82,7 +91,10 @@ SYSTEM_PROMPT = (
     '{ "type": "pause", "varighet": "2 min", "intensitet": "rolig" } ] }, '
     '{ "type": "nedjogg", "varighet": "10 min", "intensitet": "rolig" } ] }\n\n'
     "Hvis brukeren justerer en tidligere økt, returner HELE den oppdaterte økta. "
-    "Styrketrening er IKKE støttet ennå – sett da workout til null og forklar i svar. "
+    "STYRKE: for styrketrening, bruk sport='styrke' og feltet 'ovelser' (liste) i stedet for 'steg'. "
+    'Hver øvelse: { "ovelse": <navn fra lista under>, "sett": <antall>, "reps": <antall>, '
+    '"vekt": <kg, valgfritt>, "pause": <f.eks. "90 s" eller "2 min", valgfritt> }. '
+    "Bruk KUN disse øvelsesnavnene (velg det nærmeste): " + ", ".join(STRENGTH_NAMES) + ". "
     "Hvis meldingen ikke er en økt-bestilling, sett workout til null og svar kort. "
     "I 'svar' gir du en kort, vennlig oppsummering av økta (ikke gjenta hele JSON-en)."
 )
@@ -195,7 +207,7 @@ PAGE = """<!doctype html>
   }
 </style></head>
 <body>
-  <div class="ver">2026.06.13a</div>
+  <div class="ver">2026.06.13b</div>
   <div class="app" id="app">
     <div class="page">
       <button class="gear" id="gear" aria-label="Verktøy">
@@ -657,27 +669,43 @@ def upload(payload: dict = Body(...), x_app_key: Optional[str] = Header(None)):
         raise HTTPException(503, "Ikke innlogget mot Garmin. Logg inn via Verktøy.")
 
     dato = payload.pop("dato", None)
-    try:
-        workout = translate.build(payload)
-    except (ValueError, KeyError) as e:
-        raise HTTPException(400, f"Ugyldig økt: {e}")
-
     sport = payload.get("sport")
-    methods = {
-        "løping": _garmin.upload_running_workout,
-        "sykkel": _garmin.upload_cycling_workout,
-        "svømming": _garmin.upload_swimming_workout,
-        "gange": _garmin.upload_walking_workout,
-    }
-    if sport not in methods:
-        raise HTTPException(400, f"Ukjent eller manglende sport: {sport}")
 
-    try:
-        result = methods[sport](workout)
-    except Exception as e:
-        raise HTTPException(502, f"Garmin avviste økta: {e}")
+    if sport == "styrke":
+        # Styrke: bygg rå Garmin-JSON og post direkte (ingen typed metode i biblioteket).
+        try:
+            wjson = translate.build_strength(payload, STRENGTH_EXERCISES)
+        except (ValueError, KeyError) as e:
+            raise HTTPException(400, f"Ugyldig styrkeøkt: {e}")
+        gc = getattr(_garmin, "client", None) or getattr(_garmin, "garth", None)
+        if gc is None:
+            raise HTTPException(500, "Fant ikke Garmin-klienten for opplasting.")
+        try:
+            result = gc.connectapi("/workout-service/workout", method="POST", json=wjson)
+        except Exception as e:
+            import traceback
+            traceback.print_exc()
+            raise HTTPException(502, f"Garmin avviste styrkeøkta: {type(e).__name__}: {e}")
+        workout_id = result.get("workoutId") if isinstance(result, dict) else None
+    else:
+        try:
+            workout = translate.build(payload)
+        except (ValueError, KeyError) as e:
+            raise HTTPException(400, f"Ugyldig økt: {e}")
+        methods = {
+            "løping": _garmin.upload_running_workout,
+            "sykkel": _garmin.upload_cycling_workout,
+            "svømming": _garmin.upload_swimming_workout,
+            "gange": _garmin.upload_walking_workout,
+        }
+        if sport not in methods:
+            raise HTTPException(400, f"Ukjent eller manglende sport: {sport}")
+        try:
+            result = methods[sport](workout)
+        except Exception as e:
+            raise HTTPException(502, f"Garmin avviste økta: {e}")
+        workout_id = result.get("workoutId")
 
-    workout_id = result.get("workoutId")
     scheduled = None
     if dato and workout_id:
         try:

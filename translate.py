@@ -122,3 +122,92 @@ def build(data: dict):
         estimatedDurationInSecs=int(est) or 1800,
         workoutSegments=[WorkoutSegment(segmentOrder=1, sportType=sport_dict, workoutSteps=steps)],
     )
+
+
+# ───────────────────────── Styrke ─────────────────────────
+# Garmin har ingen typed strength-workout i biblioteket, så vi bygger rå-JSON
+# selv og poster til /workout-service/workout. Øvelsesnavn (category/exerciseName)
+# kommer fra strength/garmin_exercises.json via 'exmap'.
+
+_STRENGTH_SPORT = {"sportTypeId": 5, "sportTypeKey": "strength_training", "displayOrder": 5}
+_NO_TARGET = {"workoutTargetTypeId": 1, "workoutTargetTypeKey": "no.target", "displayOrder": 1}
+
+
+def build_strength(data: dict, exmap: dict) -> dict:
+    """Bygg Garmins rå workout-JSON for en styrkeøkt.
+
+    data: { "navn", "sport":"styrke", "ovelser": [
+              { "ovelse": <vennlig navn>, "sett": n, "reps": n,
+                "vekt": <kg valgfri>, "pause": <"90 s"/"2 min" valgfri> }, ... ] }
+    exmap: vennlig navn -> { "category", "exerciseName" }
+    """
+    ovelser = data.get("ovelser") or []
+    if not ovelser:
+        raise ValueError("Styrkeøkt mangler 'ovelser'.")
+
+    steps = []
+    counter = [1]
+    def nxt():
+        o = counter[0]; counter[0] += 1; return o
+
+    def make_exercise(m, reps, vekt):
+        s = {
+            "type": "ExecutableStepDTO", "stepOrder": nxt(),
+            "stepType": {"stepTypeId": 3, "stepTypeKey": "interval", "displayOrder": 3},
+            "endCondition": {"conditionTypeId": 10, "conditionTypeKey": "reps",
+                             "displayOrder": 10, "displayable": True},
+            "endConditionValue": float(reps),
+            "category": m["category"], "exerciseName": m["exerciseName"],
+            "targetType": _NO_TARGET,
+        }
+        if vekt:
+            try:
+                s["weightValue"] = float(vekt) * 1000.0   # Garmin: gram
+                s["weightDisplayUnit"] = {"unitId": 8, "unitKey": "kilogram", "factor": 1000.0}
+            except (TypeError, ValueError):
+                pass
+        return s
+
+    def make_rest(pause):
+        return {
+            "type": "ExecutableStepDTO", "stepOrder": nxt(),
+            "stepType": {"stepTypeId": 5, "stepTypeKey": "rest", "displayOrder": 5},
+            "endCondition": {"conditionTypeId": 2, "conditionTypeKey": "time",
+                             "displayOrder": 2, "displayable": True},
+            "endConditionValue": _seconds(pause),
+            "targetType": _NO_TARGET,
+        }
+
+    for ov in ovelser:
+        friendly = str(ov.get("ovelse", "")).strip().lower()
+        m = exmap.get(friendly)
+        if not m:
+            raise ValueError(f"Ukjent øvelse: {ov.get('ovelse')!r}.")
+        sett = int(ov.get("sett") or 1)
+        reps = int(ov.get("reps") or 10)
+        vekt = ov.get("vekt")
+        pause = ov.get("pause")
+
+        if sett > 1:
+            grp_order = nxt()
+            children = [make_exercise(m, reps, vekt)]
+            if pause:
+                children.append(make_rest(pause))
+            steps.append({
+                "type": "RepeatGroupDTO", "stepOrder": grp_order,
+                "stepType": {"stepTypeId": 6, "stepTypeKey": "repeat", "displayOrder": 6},
+                "numberOfIterations": sett, "smartRepeat": False,
+                "workoutSteps": children,
+            })
+        else:
+            steps.append(make_exercise(m, reps, vekt))
+            if pause:
+                steps.append(make_rest(pause))
+
+    return {
+        "workoutName": data.get("navn") or "Styrkeøkt",
+        "sportType": _STRENGTH_SPORT,
+        "workoutSegments": [{
+            "segmentOrder": 1, "sportType": _STRENGTH_SPORT, "workoutSteps": steps,
+        }],
+    }
