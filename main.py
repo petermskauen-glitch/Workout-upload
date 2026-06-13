@@ -207,7 +207,7 @@ PAGE = """<!doctype html>
   }
 </style></head>
 <body>
-  <div class="ver">2026.06.13c</div>
+  <div class="ver">2026.06.13d</div>
   <div class="app" id="app">
     <div class="page">
       <button class="gear" id="gear" aria-label="Verktøy">
@@ -418,6 +418,28 @@ PAGE = """<!doctype html>
   ta.addEventListener('input', refreshPh);
   function addMsg(cls, html){ var d=document.createElement('div'); d.className=cls; d.innerHTML=html; chat.appendChild(d); chat.scrollTop=chat.scrollHeight; return d; }
   function setAdjust(){ ph.textContent='Adjust or Launch'; ph.classList.add('pulse'); refreshPh(); }
+  // Lag en lesbar oppsummering rett fra økt-dataene (det som faktisk sendes)
+  function summarize(w){
+    if(!w) return '';
+    var lines=[];
+    if(w.sport==='styrke' && w.ovelser){
+      w.ovelser.forEach(function(o){
+        var t='• '+esc(o.ovelse||'?')+' — '+(o.sett||1)+'×'+(o.reps||'?');
+        if(o.vekt) t+=' @ '+esc(String(o.vekt))+' kg';
+        if(o.pause) t+=' (pause '+esc(o.pause)+')';
+        lines.push(t);
+      });
+    } else if(w.steg){
+      var line=function(s,p){ var t=(p||'• ')+esc(s.type||'steg');
+        if(s.varighet) t+=' '+esc(s.varighet); else if(s.distanse) t+=' '+esc(s.distanse);
+        if(s.intensitet && s.intensitet!=='ingen') t+=' ('+esc(s.intensitet)+')'; return t; };
+      w.steg.forEach(function(s){
+        if(s.gjenta && s.steg){ lines.push('• '+s.gjenta+'×:'); s.steg.forEach(function(ss){ lines.push(line(ss,'&nbsp;&nbsp;– ')); }); }
+        else { lines.push(line(s)); }
+      });
+    }
+    return lines.join('<br>');
+  }
 
   $('send').onclick = async function(){
     dbg('klikk');
@@ -434,7 +456,8 @@ PAGE = """<!doctype html>
       think.remove();
       if(res.ok && res.data){
         var svar = res.data.svar || 'Her er forslaget.';
-        addMsg('msg-ai', esc(svar));
+        var sum = summarize(res.data.workout);
+        addMsg('msg-ai', esc(svar) + (sum ? ('<br><br>' + sum) : ''));
         convo.push({ role:'model', text: JSON.stringify(res.data) });
         if(res.data.workout && res.data.workout.sport){ currentWorkout = res.data.workout; }
         setAdjust();
@@ -459,7 +482,8 @@ PAGE = """<!doctype html>
         var data = JSON.parse(r.result);
         var navn = data.navn || f.name; var sport = data.sport || '?';
         currentWorkout = data;
-        addMsg('msg-file', '<span class="nm">\\uD83D\\uDCC4 '+esc(f.name)+'</span><br><b>'+esc(navn)+'</b> · '+esc(sport));
+        var sumf = summarize(data);
+        addMsg('msg-file', '<span class="nm">\\uD83D\\uDCC4 '+esc(f.name)+'</span><br><b>'+esc(navn)+'</b> · '+esc(sport) + (sumf ? ('<br>'+sumf) : ''));
         setAdjust();
       }catch(e){ addMsg('msg-err', 'Kunne ikke lese fila som gyldig JSON.'); }
       chat.scrollTop=chat.scrollHeight; $('fileInput').value='';
