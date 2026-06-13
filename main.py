@@ -183,6 +183,9 @@ PAGE = """<!doctype html>
   .cal-day{height:34px;display:flex;align-items:center;justify-content:center;border-radius:50%;font-size:14px;color:#5b5446;cursor:pointer;}
   .cal-day.blank{visibility:hidden;cursor:default;}
   .cal-day.sel{background:var(--blue);color:#fff;font-weight:600;}
+  .cal-day.today{position:relative;}
+  .cal-day.today::after{content:"";position:absolute;bottom:3px;left:50%;transform:translateX(-50%);width:14px;height:2px;border-radius:1px;background:var(--blue);}
+  .cal-day.today.sel::after{background:#fff;}
   .datepanel{padding-bottom:74px;}
   .confirm-btn{position:absolute;right:22px;bottom:20px;}
   @supports (backdrop-filter: scale(1.15)) or (-webkit-backdrop-filter: scale(1.15)) {
@@ -192,7 +195,7 @@ PAGE = """<!doctype html>
   }
 </style></head>
 <body>
-  <div class="ver">2026.06.12d</div>
+  <div class="ver">2026.06.13a</div>
   <div class="app" id="app">
     <div class="page">
       <button class="gear" id="gear" aria-label="Verktøy">
@@ -296,9 +299,10 @@ PAGE = """<!doctype html>
   var esc = function(s){ return String(s).replace(/[&<>]/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;'}[c]; }); };
   var APPKEY = localStorage.getItem('appkey') || '';
   function key(){ return APPKEY; }
-  function dbg(s){ var v=document.querySelector('.ver'); if(v){ v.textContent='2026.06.12d · '+s; } }
-  window.onerror = function(m, src, ln){ alert('JS-feil: ' + m + ' (linje ' + ln + ')'); };
-  window.addEventListener('unhandledrejection', function(e){ var r=e.reason; alert('Rejection: ' + ((r && r.message) || r)); });
+  function dbg(s){}
+  function showErr(msg){ var c=document.getElementById('chat'); if(c){ var d=document.createElement('div'); d.className='msg-err'; d.textContent=msg; c.appendChild(d); } }
+  window.onerror = function(m, src, ln){ showErr('JS-feil: ' + m + ' (linje ' + ln + ')'); };
+  window.addEventListener('unhandledrejection', function(e){ var r=e.reason; showErr('Rejection: ' + ((r && r.message) || r)); });
 
   async function post(path, body, timeoutMs){
     var ctrl = new AbortController();
@@ -459,11 +463,12 @@ PAGE = """<!doctype html>
     $('calTitle').textContent = MONS[view.getMonth()]+' '+view.getFullYear();
     var g=$('calGrid'); g.innerHTML='';
     ['Ma','Ti','On','To','Fr','Lø','Sø'].forEach(function(w){ var d=document.createElement('div'); d.className='cal-wd'; d.textContent=w; g.appendChild(d); });
-    var y=view.getFullYear(), m=view.getMonth();
+    var y=view.getFullYear(), m=view.getMonth(), now=new Date();
     var offset=(new Date(y,m,1).getDay()+6)%7, days=new Date(y,m+1,0).getDate();
     for(var i=0;i<offset;i++){ var b=document.createElement('div'); b.className='cal-day blank'; g.appendChild(b); }
     for(var dd=1; dd<=days; dd++){ (function(dnum){
       var c=document.createElement('div'); c.className='cal-day'; c.textContent=dnum;
+      if(now.getFullYear()===y && now.getMonth()===m && now.getDate()===dnum){ c.classList.add('today'); }
       if(picked && picked.getFullYear()===y && picked.getMonth()===m && picked.getDate()===dnum){ c.classList.add('sel'); }
       c.onclick=function(){ picked=new Date(y,m,dnum); renderCal(); };
       g.appendChild(c);
