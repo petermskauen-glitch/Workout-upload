@@ -207,7 +207,7 @@ PAGE = """<!doctype html>
   }
 </style></head>
 <body>
-  <div class="ver">2026.06.13b</div>
+  <div class="ver">2026.06.13c</div>
   <div class="app" id="app">
     <div class="page">
       <button class="gear" id="gear" aria-label="Verktøy">
@@ -513,8 +513,10 @@ PAGE = """<!doctype html>
     var res = await post('/upload', payload);
     if(res.ok && res.data && res.data.workoutId){
       flash('Lagt i Garmin ✓');
+      addMsg('msg-ai', '✓ Lagt i Garmin!' + (res.data.lagtIKalender ? (' (kalender: ' + res.data.lagtIKalender + ')') : ''));
     } else {
-      flash('Feil: ' + ((res.data && res.data.detail) || 'ukjent'));
+      flash('Feil – se melding');
+      addMsg('msg-err', 'Opplasting feilet: ' + ((res.data && res.data.detail) || ('status ' + res.status)));
     }
   }
   sh.addEventListener('pointerdown', function(e){ drag=true; sx=e.clientX-cx; sh.style.transition='none'; sh.setPointerCapture(e.pointerId); });
@@ -681,7 +683,8 @@ def upload(payload: dict = Body(...), x_app_key: Optional[str] = Header(None)):
         if gc is None:
             raise HTTPException(500, "Fant ikke Garmin-klienten for opplasting.")
         try:
-            result = gc.connectapi("/workout-service/workout", method="POST", json=wjson)
+            resp = gc.post("connectapi", "/workout-service/workout", api=True, json=wjson)
+            result = resp.json() if hasattr(resp, "json") else resp
         except Exception as e:
             import traceback
             traceback.print_exc()
